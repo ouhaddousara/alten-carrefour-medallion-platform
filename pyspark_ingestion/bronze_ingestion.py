@@ -1,30 +1,30 @@
-"""
-Job PySpark d'ingestion Bronze.
-Lit les fichiers CSV validés depuis raw-zone/pending, applique un schéma
-strict, ajoute des métadonnées de traçabilité, et écrit le résultat dans
-BigQuery (raw_bronze.bronze_staging).
-"""
 import argparse
 import sys
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import current_timestamp, input_file_name, lit
-from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType
+from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 
 def build_schema() -> StructType:
-    """Schéma strict imposé sur les fichiers CSV entrants."""
+    
     return StructType([
-        StructField("id", IntegerType(), nullable=False),
-        StructField("name", StringType(), nullable=True),
-        StructField("value", DoubleType(), nullable=True),
+        StructField("raw_month", StringType(), nullable=False),          
+        StructField("raw_entity_org", StringType(), nullable=True),      
+        StructField("raw_profit_center", StringType(), nullable=True),   
+        StructField("raw_business_area", StringType(), nullable=True),
+        StructField("raw_company", StringType(), nullable=True),         
+        StructField("raw_account", StringType(), nullable=True),         
+        StructField("raw_period_type", StringType(), nullable=True),     
+        StructField("raw_phase", StringType(), nullable=True),           
+        StructField("raw_value", DoubleType(), nullable=True),           
     ])
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Bronze layer ingestion job")
+    parser = argparse.ArgumentParser(description="Bronze layer ingestion job — P&L flow")
     parser.add_argument("--input_path", required=True,
-                         help="Chemin GCS des fichiers CSV, ex: gs://bucket/pending/*.csv")
+                         help="Chemin GCS des fichiers .DEL, ex: gs://bucket/pending/*.DEL")
     parser.add_argument("--output_table", required=True,
                          help="Table BigQuery cible, format project.dataset.table")
     parser.add_argument("--temp_bucket", required=True,
@@ -37,17 +37,18 @@ def main():
 
     spark = (
         SparkSession.builder
-        .appName("carrefour-bronze-ingestion")
+        .appName("carrefour-bronze-pl-ingestion")
         .getOrCreate()
     )
 
     schema = build_schema()
 
-    print(f"Lecture des fichiers CSV depuis: {args.input_path}")
+    print(f"Lecture des fichiers depuis: {args.input_path}")
     df = (
         spark.read
-        .option("header", "true")
-        .option("delimiter", ",")
+        .option("header", "false")       
+        .option("delimiter", "\t")       
+        .option("encoding", "ISO-8859-1")  #
         .option("mode", "PERMISSIVE")
         .schema(schema)
         .csv(args.input_path)
@@ -61,12 +62,11 @@ def main():
         spark.stop()
         sys.exit(0)
 
-    # Métadonnées de traçabilité — pratique standard en ingestion Bronze
     df_enriched = (
         df
         .withColumn("_ingested_at", current_timestamp())
         .withColumn("_source_file", input_file_name())
-        .withColumn("_ingestion_job", lit("bronze_ingestion"))
+        .withColumn("_ingestion_job", lit("bronze_pl_ingestion"))
     )
 
     print(f"Écriture vers BigQuery: {args.output_table}")

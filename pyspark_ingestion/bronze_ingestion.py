@@ -1,3 +1,6 @@
+"""
+Job PySpark d'ingestion Bronze — flux Profit & Loss Objective (Budget)
+"""
 import argparse
 import sys
 
@@ -7,28 +10,28 @@ from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 
 def build_schema() -> StructType:
-    
+    """Schéma basé sur la structure observée : 10 colonnes tabulées, sans
+    en-tête, encodage ANSI.
+    """
     return StructType([
-        StructField("raw_month", StringType(), nullable=False),          
-        StructField("raw_entity_org", StringType(), nullable=True),      
-        StructField("raw_profit_center", StringType(), nullable=True),   
+        StructField("raw_month", StringType(), nullable=False),
+        StructField("raw_entity_org", StringType(), nullable=True),
+        StructField("raw_profit_center", StringType(), nullable=True),
         StructField("raw_business_area", StringType(), nullable=True),
-        StructField("raw_company", StringType(), nullable=True),         
-        StructField("raw_account", StringType(), nullable=True),         
-        StructField("raw_period_type", StringType(), nullable=True),     
-        StructField("raw_phase", StringType(), nullable=True),           
-        StructField("raw_value", DoubleType(), nullable=True),           
+        StructField("raw_company", StringType(), nullable=True),
+        StructField("raw_account", StringType(), nullable=True),
+        StructField("raw_period_type", StringType(), nullable=True),
+        StructField("raw_phase", StringType(), nullable=True),
+        StructField("raw_audit_tracking", StringType(), nullable=True),
+        StructField("raw_value", DoubleType(), nullable=True),
     ])
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Bronze layer ingestion job — P&L flow")
-    parser.add_argument("--input_path", required=True,
-                         help="Chemin GCS des fichiers .DEL, ex: gs://bucket/pending/*.DEL")
-    parser.add_argument("--output_table", required=True,
-                         help="Table BigQuery cible, format project.dataset.table")
-    parser.add_argument("--temp_bucket", required=True,
-                         help="Bucket GCS utilisé comme zone temporaire par le connecteur BigQuery")
+    parser = argparse.ArgumentParser(description="Bronze layer ingestion job — P&L Objective flow")
+    parser.add_argument("--input_path", required=True)
+    parser.add_argument("--output_table", required=True)
+    parser.add_argument("--temp_bucket", required=True)
     return parser.parse_args()
 
 
@@ -46,9 +49,9 @@ def main():
     print(f"Lecture des fichiers depuis: {args.input_path}")
     df = (
         spark.read
-        .option("header", "false")       
-        .option("delimiter", "\t")       
-        .option("encoding", "ISO-8859-1")  #
+        .option("header", "false")
+        .option("delimiter", "\t")
+        .option("encoding", "ISO-8859-1")
         .option("mode", "PERMISSIVE")
         .schema(schema)
         .csv(args.input_path)

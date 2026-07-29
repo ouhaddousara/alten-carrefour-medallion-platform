@@ -14,22 +14,9 @@
     )
 }}
 
-with bronze as (
+with staged as (
 
-    select
-        raw_month,
-        raw_entity_org,
-        raw_profit_center,
-        raw_business_area,
-        raw_company,
-        raw_account,
-        raw_period_type,
-        raw_phase,
-        raw_audit_tracking,
-        raw_value,
-        _ingested_at,
-        _source_file
-    from {{ source('raw_bronze', 'bronze_staging') }}
+    select * from {{ ref('stg_bronze_pl') }}
 
     {% if is_incremental() %}
     where _ingested_at > (select coalesce(max(_ingested_at), timestamp('1970-01-01')) from {{ this }})
@@ -37,33 +24,48 @@ with bronze as (
 
 ),
 
-transformed as (
+filtered as (
 
-    select
-        -- Mois au format YYYYMM -> premier jour du mois
-        parse_date('%Y%m', raw_month) as monthStartDate,
+    select *
+    from staged
 
-        -- Règle NCC : si centre de coût = centre de profit, remplacer par "NCC"
-        case
-            when raw_entity_org = raw_profit_center then 'NCC'
-            else raw_entity_org
-        end as costCenterKey,
+    where monthStartDate is not null
+      and costCenterKey is not null
+      and profitCenterKey is not null
+      and businessAreaKey is not null
+      and companyKey is not null
+      and accountingAccountKey is not null
+      and phaseCode is not null
+      and auditTrackingCode is not null
 
-        raw_profit_center as profitCenterKey,
-        raw_business_area as businessAreaKey,
-        raw_company as companyKey,
-        raw_account as accountingAccountKey,
-        raw_period_type as periodTypeCode,
-        raw_phase as phaseCode,
-        raw_audit_tracking as auditTrackingCode,
-        raw_value as profitAndLossObjectiveIndicatorValue,
+),
 
-        _ingested_at,
-        _source_file,
-        current_timestamp() as _silver_processed_at
+deduplicated as (
 
-    from bronze
+    select *
+    from filtered
+    qualify row_number() over (
+        partition by
+            monthStartDate, costCenterKey, profitCenterKey, businessAreaKey,
+            companyKey, accountingAccountKey, phaseCode, auditTrackingCode
+        order by _ingested_at desc
+    ) = 1
 
 )
 
-select * from transformed
+select
+    monthStartDate,
+    costCenterKey,
+    profitCenterKey,
+    businessAreaKey,
+    companyKey,
+    accountingAccountKey,
+    periodTypeCode,
+    phaseCode,
+    auditTrackingCode,
+    profitAndLossObjectiveIndicatorValue,
+    _ingested_at,
+    _source_file,
+    current_timestamp() as _silver_processed_at
+
+from deduplicated

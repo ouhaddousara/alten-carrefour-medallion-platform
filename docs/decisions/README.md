@@ -13,3 +13,4 @@ menée, et leur justification.
 | [005](005-silver-deduplication-strategy.md) | Stratégie de déduplication Silver | 3 |
 | [006](006-shared-staging-model-pattern.md) | Modèle staging partagé | 3 |
 | [007](007-custom-schema-naming-macro.md) | Macro de nommage de schéma personnalisé | 3 |
+| [008](docs/decisions/008-outlier-detection-and-data-anomaly.md) | Détection d'anomalies et outliers Gold | 3 |

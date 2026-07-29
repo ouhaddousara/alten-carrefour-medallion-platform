@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: gold_profit_and_loss_objective_summary
+    description: "Agrégation Gold — total Budget par mois, société, domaine d'activité, prêt pour la BI"
+    columns:
+      - name: monthStartDate
+        tests:
+          - not_null
+      - name: total_indicator_value
+        tests:
+          - not_null
+
+  - name: gold_pl_month_over_month_variance
+    description: "Analyse de tendance — variance du Budget entre mois consécutifs, par société et domaine d'activité"
+    columns:
+      - name: monthStartDate
+        tests:
+          - not_null
+      - name: total_value
+        tests:
+          - not_null
+
+  - name: gold_pl_top_cost_centers
+    description: "Classement des 20 comptes comptables les plus significatifs en valeur absolue"
+    columns:
+      - name: accountingAccountKey
+        tests:
+          - not_null
+      - name: rang
+        tests:
+          - not_null
+          - unique
+
+  - name: gold_pl_profit_center_breakdown
+    description: "Répartition du Budget par centre de profit, avec taux de lignes en NCC"
+    columns:
+      - name: monthStartDate
+        tests:
+          - not_null
+      - name: profitCenterKey
+        tests:
+          - not_null
+
+  - name: gold_pipeline_quality_kpi
+    description: "KPI opérationnel — santé du pipeline (volumes Bronze/Silver/Rejets, taux de rejet et de déduplication)"
+    columns:
+      - name: total_bronze
+        tests:
+          - not_null

@@ -16,34 +16,52 @@ with staged as (
 
 ),
 
+stats as (
+
+    select
+        avg(abs(profitAndLossObjectiveIndicatorValue)) as avg_abs_value,
+        stddev(abs(profitAndLossObjectiveIndicatorValue)) as stddev_abs_value
+    from staged
+    where profitAndLossObjectiveIndicatorValue is not null
+
+),
+
 rejected as (
 
     select
-        *,
+        s.*,
         array_to_string(
             array_concat(
-                case when monthStartDate is null then ['monthStartDate manquant/format invalide'] else [] end,
-                case when costCenterKey is null then ['costCenterKey manquant'] else [] end,
-                case when profitCenterKey is null then ['profitCenterKey manquant'] else [] end,
-                case when businessAreaKey is null then ['businessAreaKey manquant'] else [] end,
-                case when companyKey is null then ['companyKey manquant'] else [] end,
-                case when accountingAccountKey is null then ['accountingAccountKey manquant'] else [] end,
-                case when phaseCode is null then ['phaseCode manquant'] else [] end,
-                case when auditTrackingCode is null then ['auditTrackingCode manquant'] else [] end
+                case when s.monthStartDate is null then ['monthStartDate manquant/format invalide'] else [] end,
+                case when s.costCenterKey is null then ['costCenterKey manquant'] else [] end,
+                case when s.profitCenterKey is null then ['profitCenterKey manquant'] else [] end,
+                case when s.businessAreaKey is null then ['businessAreaKey manquant'] else [] end,
+                case when s.companyKey is null then ['companyKey manquant'] else [] end,
+                case when s.accountingAccountKey is null then ['accountingAccountKey manquant'] else [] end,
+                case when s.phaseCode is null then ['phaseCode manquant'] else [] end,
+                case when s.auditTrackingCode is null then ['auditTrackingCode manquant'] else [] end,
+                case
+                    when abs(s.profitAndLossObjectiveIndicatorValue) > stats.avg_abs_value + (10 * stats.stddev_abs_value)
+                    then ['valeur aberrante (>10 écarts-types), validation M. Amara']
+                    else []
+                end
             ),
             ', '
         ) as rejection_reason,
         current_timestamp() as _rejected_at
 
-    from staged
-    where monthStartDate is null
-       or costCenterKey is null
-       or profitCenterKey is null
-       or businessAreaKey is null
-       or companyKey is null
-       or accountingAccountKey is null
-       or phaseCode is null
-       or auditTrackingCode is null
+    from staged s
+    cross join stats
+
+    where s.monthStartDate is null
+       or s.costCenterKey is null
+       or s.profitCenterKey is null
+       or s.businessAreaKey is null
+       or s.companyKey is null
+       or s.accountingAccountKey is null
+       or s.phaseCode is null
+       or s.auditTrackingCode is null
+       or abs(s.profitAndLossObjectiveIndicatorValue) > stats.avg_abs_value + (10 * stats.stddev_abs_value)
 
 )
 

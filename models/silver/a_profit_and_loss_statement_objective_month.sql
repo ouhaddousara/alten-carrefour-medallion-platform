@@ -40,10 +40,28 @@ filtered as (
 
 ),
 
+stats as (
+
+    select
+        avg(abs(profitAndLossObjectiveIndicatorValue)) as avg_abs_value,
+        stddev(abs(profitAndLossObjectiveIndicatorValue)) as stddev_abs_value
+    from filtered
+
+),
+
+without_outliers as (
+
+    select f.*
+    from filtered f
+    cross join stats
+    where abs(f.profitAndLossObjectiveIndicatorValue) <= stats.avg_abs_value + (10 * stats.stddev_abs_value)
+
+),
+
 deduplicated as (
 
     select *
-    from filtered
+    from without_outliers
     qualify row_number() over (
         partition by
             monthStartDate, costCenterKey, profitCenterKey, businessAreaKey,

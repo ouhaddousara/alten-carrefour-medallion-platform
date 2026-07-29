@@ -52,3 +52,15 @@ d'ingestion.
   d'unicité déjà appliqués en Silver — utile à documenter comme practice
   de validation de plausibilité métier, distincte de la validation de
   complétude technique.
+
+## Mise à jour
+
+M. Amara a confirmé qu'il s'agit d'une anomalie isolée (2 lignes) et a
+demandé leur exclusion. La logique de détection statistique (10
+écarts-types), initialement conçue comme un modèle de monitoring
+(`gold_pl_anomalies`), a été intégrée directement dans le modèle Silver
+comme filtre d'exclusion, avec routage vers `silver_rejets` pour
+conserver la traçabilité — plutôt qu'une suppression directe en base,
+qui aurait rompu l'auditabilité du pipeline.
+
+**Statut : Résolu.**

@@ -16,3 +16,4 @@ spark-warehouse/
 .venv/
 documentation/
 composer_deploy/data/
+composer_deploy/dags/

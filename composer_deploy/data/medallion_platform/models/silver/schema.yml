@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: a_profit_and_loss_statement_objective_month
+    description: "Table Silver — indicateurs Profit & Loss Objective (Budget), nettoyés et dédupliqués"
+    columns:
+      - name: monthStartDate
+        tests:
+          - not_null
+      - name: costCenterKey
+        tests:
+          - not_null
+      - name: profitCenterKey
+        tests:
+          - not_null
+      - name: businessAreaKey
+        tests:
+          - not_null
+      - name: companyKey
+        tests:
+          - not_null
+      - name: accountingAccountKey
+        tests:
+          - not_null
+      - name: phaseCode
+        tests:
+          - not_null
+      - name: auditTrackingCode
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - monthStartDate
+              - costCenterKey
+              - profitCenterKey
+              - businessAreaKey
+              - companyKey
+              - accountingAccountKey
+              - phaseCode
+              - auditTrackingCode
+
+  - name: silver_rejets
+    description: "Table d'archive des lignes rejetées pour clé primaire incomplète"

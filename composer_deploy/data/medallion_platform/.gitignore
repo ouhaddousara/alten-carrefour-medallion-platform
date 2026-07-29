@@ -1,0 +1,17 @@
+*.json
+venv/
+.env
+target/
+dbt_packages/
+logs/
+
+
+sample_data/
+*.DEL
+*.csv
+
+
+*.jar
+spark-warehouse/
+.venv/
+documentation/

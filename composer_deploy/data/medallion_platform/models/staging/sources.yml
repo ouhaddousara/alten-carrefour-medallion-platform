@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: raw_bronze
+    dataset: raw_bronze
+    tables:
+      - name: bronze_staging

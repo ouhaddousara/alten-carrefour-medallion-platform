@@ -14,3 +14,4 @@ menée, et leur justification.
 | [006](006-shared-staging-model-pattern.md) | Modèle staging partagé | 3 |
 | [007](007-custom-schema-naming-macro.md) | Macro de nommage de schéma personnalisé | 3 |
 | [008](docs/decisions/008-outlier-detection-and-data-anomaly.md) | Détection d'anomalies et outliers Gold | 3 |
+| [009](docs/decisions/009-ci-schema-isolation-incident.md) | Incident isolation CI et correction | 4 |

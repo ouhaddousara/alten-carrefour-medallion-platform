@@ -15,3 +15,5 @@ menée, et leur justification.
 | [007](007-custom-schema-naming-macro.md) | Macro de nommage de schéma personnalisé | 3 |
 | [008](docs/decisions/008-outlier-detection-and-data-anomaly.md) | Détection d'anomalies et outliers Gold | 3 |
 | [009](docs/decisions/009-ci-schema-isolation-incident.md) | Incident isolation CI et correction | 4 |
+| [010](docs/decisions/010-iterative-iam-role-discovery.md) | Découverte itérative des rôles IAM | 4 |
+| [011](docs/decisions/011-composer-environment-creation-incident.md) | Incident de création Composer | 4 |

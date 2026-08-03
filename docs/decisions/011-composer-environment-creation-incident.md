@@ -65,3 +65,35 @@ vérifiés avant toute nouvelle tentative :
   explicite lors de sa première utilisation sur un projet — la
   simplicité opérationnelle du service ne dispense pas d'une
   compréhension de son modèle de permissions sous-jacent.
+
+## Décision finale
+
+Après 7 tentatives de création et l'épuisement des pistes de diagnostic
+accessibles via la CLI standard (IAM, APIs, réseau, VPC peering, logs
+`k8s_cluster`), la décision a été prise d'arrêter les tentatives répétées
+de création de l'environnement Cloud Composer, plutôt que de continuer à
+consommer du temps et du budget cloud sans nouvelle piste de diagnostic.
+
+## Stratégie de compensation adoptée
+
+Le DAG (`carrefour_pl_medallion_pipeline.py`) reste développé et versionné.
+Pour démontrer la validité de sa logique métier malgré l'indisponibilité de
+l'environnement d'orchestration, les deux tâches du DAG ont été exécutées
+manuellement, dans le même ordre et avec les mêmes commandes que celles
+qu'Airflow aurait automatiquement déclenchées :
+
+1. `ingest_bronze_pyspark` — soumission manuelle du même batch Dataproc
+   Serverless que `DataprocCreateBatchOperator` aurait exécuté
+2. `run_dbt_silver_and_gold` — exécution manuelle de `dbt run && dbt test`,
+   identique à ce que `BashOperator` aurait exécuté
+
+Cette approche valide la **logique** du pipeline (l'enchaînement correct
+des étapes et leur succès individuel), sans valider l'**orchestration
+automatisée** elle-même, qui reste bloquée par la limitation
+d'infrastructure documentée ci-dessus.
+
+## Statut final
+
+**Non résolu** au niveau infrastructure Cloud Composer — escaladé à
+M. Amara. **Compensé fonctionnellement** par une exécution manuelle
+équivalente, documentée comme preuve de la validité du pipeline.

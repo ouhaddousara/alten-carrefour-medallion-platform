@@ -1,0 +1,2 @@
+# Not used in this MVP — generic tests (not_null, unique) are defined
+# directly in each model's schema.yml file

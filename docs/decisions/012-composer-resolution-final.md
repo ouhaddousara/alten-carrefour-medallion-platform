@@ -88,3 +88,52 @@ via Cloud Composer.
   2+, vérifier systématiquement les permissions du compte de service
   Compute Engine par défaut du projet, même quand un service account
   custom est explicitement fourni à la ressource managée.
+
+## Confirmation finale du déploiement — 04 août 2026
+
+Après résolution de la root cause (rôles IAM manquants sur les comptes de
+service Compute et Composer, corrigés par M. Amara), le déploiement du DAG
+a nécessité une série d'ajustements complémentaires, chacun révélé par
+l'exécution réelle en environnement Composer :
+
+1. **Venv sur GCSFuse trop lent** → déplacé vers stockage local du worker
+   (`/tmp`), l'écriture de milliers de petits fichiers Python sur
+   stockage monté GCSFuse étant intrinsèquement lente
+2. **Zone GCE temporairement indisponible** (`europe-west1-d`) → résolu
+   par un simple nouveau déclenchement (aléa transitoire d'infrastructure)
+3. **Structure de dossier imbriquée** lors de l'upload du projet dbt via
+   `storage data import` → chemin ajusté dans le DAG
+4. **`packages.yml` mal formé** pour dbt 1.7 (format de version
+   incompatible) → corrigé vers la syntaxe liste
+5. **`package-lock.yml` figé par une version dbt différente** (1.11 en
+   local vs 1.7 sur Composer) → retiré du contrôle de version,
+   régénéré à chaque exécution
+6. **Syntaxe de test dbt incompatible** (`arguments:` introduit dans
+   dbt 1.9+, absent en 1.7) → syntaxe de test revertie vers le format
+   compatible dbt 1.7
+
+## Résultat final
+
+Task 1 (ingest_bronze_pyspark) : SUCCESS
+Task 2 (run_dbt_silver_and_gold) : SUCCESS
+dbt run : PASS=9 WARN=0 ERROR=0 (92.72s)
+dbt test : PASS=19 WARN=0 ERROR=0 (13.30s)
+
+
+**Statut final : Résolu et validé en conditions réelles.** Le pipeline
+Bronze → Silver → Gold s'exécute désormais de façon entièrement
+automatisée via Cloud Composer, conformément à l'exigence initiale de la
+spécification du stage.
+
+## Conséquence méthodologique notable
+
+Ce déploiement illustre qu'un environnement d'orchestration managé
+fonctionnel (`state: RUNNING`) n'est qu'une précondition, pas une
+garantie d'exécution correcte : six problèmes distincts et indépendants
+ont dû être résolus après la résolution de l'incident d'infrastructure
+initial, chacun spécifique à l'écart entre l'environnement de
+développement local (dbt 1.11) et l'environnement d'exécution managé
+(dbt 1.7.14 imposé par Composer). Ceci souligne l'importance de tester
+un pipeline dans son environnement cible réel plutôt que de supposer
+qu'un succès en local se traduit automatiquement en succès en
+production.

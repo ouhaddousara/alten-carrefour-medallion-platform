@@ -2,6 +2,10 @@
 
 **Statut :** Résolu
 
+**⚠️ Superseded by [ADR-012](012-composer-resolution-final.md)** — la
+véritable cause racine a été identifiée ultérieurement par M. Amara,
+différente de l'hypothèse quota SSD documentée ci-dessous.
+
 ## Contexte
 
 La création du premier environnement Cloud Composer

@@ -4,7 +4,8 @@ Correspond au job de production "bgl-finances-profit-loss-indicators-month".
 
 Séquence :
   1. Ingestion Bronze via PySpark sur Dataproc Serverless
-  2. Transformation Silver + agrégation Gold via dbt, suivi des tests qualité
+  2. Transformation Silver + agrégation Gold via dbt (venv local au worker),
+     suivi des tests qualité
 """
 from datetime import datetime
 
@@ -17,9 +18,8 @@ REGION = "europe-west1"
 RAW_ZONE_BUCKET = "carrefour-raw-zone-black-octagon"
 SERVICE_ACCOUNT = f"data-platform-sa@{PROJECT_ID}.iam.gserviceaccount.com"
 
-# Chemin du projet dbt, synchronisé dans le dossier /data du bucket Composer
-DBT_PROJECT_DIR = "/home/airflow/gcs/data/medallion_platform"
-DBT_PROFILES_DIR = "/home/airflow/gcs/data/medallion_platform"
+DBT_PROJECT_DIR = "/home/airflow/gcs/data/medallion_platform/medallion_platform"
+DBT_VENV_DIR = "/tmp/dbt_venv"
 
 BATCH_ID = "bronze-ingestion-{{ ds_nodash }}-{{ ts_nodash[-6:] }}"
 
@@ -47,6 +47,17 @@ default_args = {
     "retries": 1,
 }
 
+DBT_BASH_COMMAND = f"""
+set -e
+rm -rf {DBT_VENV_DIR}
+python3 -m venv {DBT_VENV_DIR}
+{DBT_VENV_DIR}/bin/pip install --quiet --upgrade pip
+{DBT_VENV_DIR}/bin/pip install --quiet dbt-core==1.7.14 dbt-bigquery==1.7.9
+{DBT_VENV_DIR}/bin/dbt deps --project-dir {DBT_PROJECT_DIR}
+{DBT_VENV_DIR}/bin/dbt run --project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROJECT_DIR}
+{DBT_VENV_DIR}/bin/dbt test --project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROJECT_DIR}
+"""
+
 with DAG(
     dag_id="carrefour_pl_medallion_pipeline",
     description="Pipeline Bronze -> Silver -> Gold pour les indicateurs Profit & Loss Objective (Budget)",
@@ -67,10 +78,7 @@ with DAG(
 
     run_dbt_transform = BashOperator(
         task_id="run_dbt_silver_and_gold",
-        bash_command=(
-            f"dbt run --project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROFILES_DIR} "
-            f"&& dbt test --project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROFILES_DIR}"
-        ),
+        bash_command=DBT_BASH_COMMAND,
     )
 
     ingest_bronze >> run_dbt_transform

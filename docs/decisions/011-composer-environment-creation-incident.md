@@ -97,3 +97,78 @@ d'infrastructure documentée ci-dessus.
 **Non résolu** au niveau infrastructure Cloud Composer — escaladé à
 M. Amara. **Compensé fonctionnellement** par une exécution manuelle
 équivalente, documentée comme preuve de la validité du pipeline.
+
+## Root cause identifiée — (the last update)
+
+Une session de troubleshooting approfondie a permis d'identifier la
+véritable cause racine, jusque-là masquée par le message générique
+"Some of the GKE pods failed to become healthy" :
+
+**Quota SSD régional insuffisant** (`SSD_TOTAL_GB` : limite 250 Go,
+usage 200 Go dans `europe-west1`).
+
+### Mécanisme confirmé
+
+Quota SSD régional insuffisant (250 Go, europe-west1)
+↓
+Nœuds GKE Autopilot ne peuvent pas terminer leur provisioning
+↓
+Pods Airflow (scheduler, worker, webserver) restent Pending
+↓
+Composer déclare l'échec : "pods failed to become healthy"
+↓
+Nettoyage automatique (cluster → STOPPING → suppression, quota libéré)
+↓
+Environnement Composer passe en état ERROR
+
+
+Les disques de boot des nœuds Autopilot sont provisionnés dans une
+infrastructure gérée par Google, invisible via `gcloud compute disks
+list` sur le projet (seulement 14 Go de PVC applicatifs visibles), mais
+consomment bien le quota régional — expliquant l'écart apparent entre
+disques visibles et quota réellement saturé. Cette invisibilité explique
+pourquoi les 7 tentatives précédentes, bien que corrigeant chacune une
+vraie cause secondaire (IAM, API, réseau), ne pouvaient pas révéler le
+vrai facteur bloquant : chaque tentative consommait le quota disponible
+jusqu'à l'épuisement, échouait, puis le nettoyage automatique libérait
+le quota — masquant la récurrence du même problème sous des symptômes
+en apparence différents.
+
+### Investigation clé
+
+Une vérification directe du quota via
+`gcloud compute regions describe europe-west1` a confirmé
+`SSD_TOTAL_GB` à 200/250 Go pendant une tentative active, puis à 0/250 Go
+après l'échec et le nettoyage automatique du cluster — validant
+complètement le mécanisme.
+
+## Options envisagées
+
+| Option | Description | Statut |
+|---|---|---|
+| A | Demande d'augmentation de quota SSD (250 → 500 Go) auprès du support GCP | Envisagée, non retenue (délai externe non garanti dans le temps du stage) |
+| B | Compensation par exécution manuelle des 2 tâches du DAG | **Retenue** |
+
+## Décision finale
+
+Arrêt des tentatives de déploiement Cloud Composer pour la durée du
+stage. Le DAG reste écrit et versionné (`airflow_dags/`) comme preuve de
+conception ; son exécution est démontrée manuellement (`gcloud dataproc
+batches submit` puis `dbt run`/`dbt test`) pour prouver la validité
+fonctionnelle du pipeline Bronze → Silver → Gold, indépendamment de
+l'orchestrateur.
+
+## Conséquences
+
+- La cause étant désormais identifiée avec certitude (quota, pas une
+  erreur de configuration IAM/réseau), une demande d'augmentation de
+  quota SSD auprès du support GCP résoudrait le blocage si le temps du
+  stage le permettait — option documentée pour une reprise ultérieure du
+  projet.
+- Ce cas illustre une limite du diagnostic par messages d'erreur
+  génériques sur des services managés : sept causes secondaires
+  légitimes ont été corrigées avant d'atteindre la vraie cause, un quota
+  invisible depuis les outils de diagnostic applicatifs standards.
+
+**Statut final : Clos — root cause identifiée, non résolue par choix
+(délai de stage), compensée fonctionnellement.**

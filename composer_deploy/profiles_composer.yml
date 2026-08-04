@@ -1,0 +1,10 @@
+medallion_platform:
+  target: prod
+  outputs:
+    prod:
+      type: bigquery
+      method: oauth
+      project: black-octagon-502709-e2
+      dataset: finances_objective_r
+      threads: 4
+      location: EU

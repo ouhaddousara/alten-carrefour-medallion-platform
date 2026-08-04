@@ -17,3 +17,4 @@ spark-warehouse/
 documentation/
 composer_deploy/data/
 composer_deploy/dags/
+package-lock.yml

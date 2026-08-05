@@ -169,6 +169,8 @@ This environment required extensive troubleshooting — 7 failed creation attemp
 
 More: [environment running](docs/screenshots/week4/05-composer-env-running.png) · [DAG list](docs/screenshots/week4/06-airflow-dag-list.png) · [execution logs](docs/screenshots/week4/10a-airflow-logs-dataproc-task.png)
 
+Once validated, the environment was deleted to control ongoing infrastructure costs — see [environment deletion](docs/screenshots/week4/12-composer-deleted.png).
+
 ---
 
 ### 5. CI/CD (GitHub Actions)
